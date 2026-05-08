@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1D9E75">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CF管理">
+<title>クラファン管理</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  :root{
+    --g:#1D9E75;--gl:#E1F5EE;--gd:#0F6E56;
+    --bg:#f7f8f6;--surface:#ffffff;--surface2:#f3f4f2;
+    --border:rgba(0,0,0,0.1);--border2:rgba(0,0,0,0.18);
+    --text:#1a1a18;--text2:#666660;--text3:#999994;
+    --danger:#A32D2D;--danger-bg:#FCEBEB;--danger-border:#F09595;
+    --warn-bg:#FAEEDA;--warn:#854F0B;
+    --radius:12px;--radius-sm:8px;
+    --shadow:0 1px 3px rgba(0,0,0,0.08),0 1px 2px rgba(0,0,0,0.06);
+  }
+  @media(prefers-color-scheme:dark){
+    :root{
+      --bg:#0f1210;--surface:#1a1f1c;--surface2:#222721;
+      --border:rgba(255,255,255,0.1);--border2:rgba(255,255,255,0.18);
+      --text:#e8ebe8;--text2:#a0a89e;--text3:#6a7068;
+      --gl:#0a3325;--gd:#5DCAA5;
+      --danger:#F09595;--danger-bg:#2a1515;--danger-border:#A32D2D;
+      --warn-bg:#2a2010;--warn:#EF9F27;
+    }
+  }
+  html,body{height:100%;background:var(--bg);font-family:-apple-system,'Hiragino Sans','Yu Gothic',sans-serif;color:var(--text);overscroll-behavior:none}
+  .app{display:flex;flex-direction:column;height:100%;max-width:480px;margin:0 auto;background:var(--bg)}
+  /* NAV */
+  .nav{display:flex;background:var(--surface);border-top:0.5px solid var(--border);position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;z-index:100;padding-bottom:env(safe-area-inset-bottom)}
+  .nav button{flex:1;padding:10px 4px 8px;font-size:10px;border:none;background:none;color:var(--text3);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;transition:color 0.15s}
+  .nav button i{font-size:22px}
+  .nav button.active{color:var(--g)}
+  /* CONTENT */
+  .content{flex:1;overflow-y:auto;padding:16px 16px 80px;-webkit-overflow-scrolling:touch}
+  .section{display:none}
+  .section.active{display:block}
+  /* HEADER */
+  .page-header{font-size:20px;font-weight:700;letter-spacing:-0.5px;margin-bottom:16px;color:var(--text)}
+  /* FILTER */
+  .filter-row{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:14px;scrollbar-width:none}
+  .filter-row::-webkit-scrollbar{display:none}
+  .ptag{padding:6px 12px;border-radius:20px;font-size:12px;font-weight:500;border:0.5px solid var(--border2);cursor:pointer;background:var(--surface);color:var(--text2);white-space:nowrap;flex-shrink:0;transition:all 0.15s}
+  .ptag.sel{background:var(--gl);border-color:var(--g);color:var(--gd)}
+  /* CARDS */
+  .card{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px;cursor:pointer;box-shadow:var(--shadow);transition:transform 0.1s,box-shadow 0.1s}
+  .card:active{transform:scale(0.985);box-shadow:none}
+  .card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
+  .card-title{font-size:14px;font-weight:600;color:var(--text);line-height:1.3}
+  .card-platform{font-size:11px;font-weight:600;padding:3px 9px;border-radius:10px;background:var(--gl);color:var(--gd);flex-shrink:0;margin-left:8px}
+  .card-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px}
+  .field-label{font-size:10px;color:var(--text3);margin-bottom:2px;font-weight:500;text-transform:uppercase;letter-spacing:0.3px}
+  .field-val{font-size:13px;color:var(--text);font-weight:500}
+  /* STATUS */
+  .status-badge{font-size:11px;font-weight:600;padding:3px 9px;border-radius:10px;display:inline-block}
+  .status-running{background:var(--gl);color:var(--gd)}
+  .status-ended{background:var(--surface2);color:var(--text2)}
+  .status-pending{background:var(--warn-bg);color:var(--warn)}
+  /* PROGRESS */
+  .progress-wrap{margin-top:10px}
+  .progress-bar{height:4px;background:var(--surface2);border-radius:2px}
+  .progress-fill{height:100%;border-radius:2px;background:var(--g);transition:width 0.3s}
+  .progress-label{font-size:10px;color:var(--text3);text-align:right;margin-top:3px}
+  /* METRICS */
+  .metric-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+  .metric{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;box-shadow:var(--shadow)}
+  .metric .lbl{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:6px}
+  .metric .val{font-size:18px;font-weight:700;color:var(--text);letter-spacing:-0.5px}
+  .metric .val.green{color:var(--g)}
+  .metric .sub{font-size:11px;color:var(--text3);margin-top:3px}
+  /* YEAR */
+  .year-section{margin-bottom:14px}
+  .year-title{font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;padding-bottom:6px;border-bottom:0.5px solid var(--border)}
+  .year-metrics{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+  .year-metric{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-sm);padding:10px}
+  .year-metric .lbl{font-size:10px;color:var(--text3);margin-bottom:3px;font-weight:500}
+  .year-metric .val{font-size:14px;font-weight:700;color:var(--text)}
+  /* FORM */
+  .form-section-title{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin:16px 0 8px;padding-top:12px;border-top:0.5px solid var(--border)}
+  .form-section-title:first-child{margin-top:0;padding-top:0;border-top:none}
+  .form-group{margin-bottom:12px}
+  .form-group label{font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:5px}
+  .form-group input,.form-group select{width:100%;padding:10px 12px;font-size:15px;border:0.5px solid var(--border2);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);outline:none;-webkit-appearance:none;appearance:none;transition:border-color 0.15s}
+  .form-group input:focus,.form-group select:focus{border-color:var(--g)}
+  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .btn-primary{width:100%;padding:14px;background:var(--g);color:#fff;border:none;border-radius:var(--radius);font-size:15px;font-weight:700;cursor:pointer;margin-top:6px;letter-spacing:0.2px;transition:opacity 0.15s}
+  .btn-primary:active{opacity:0.85}
+  .btn-sub{width:100%;margin-top:8px;padding:13px;background:none;border:0.5px solid var(--border2);border-radius:var(--radius);color:var(--text2);cursor:pointer;font-size:14px;font-weight:500}
+  /* EMPTY */
+  .empty{text-align:center;color:var(--text3);font-size:14px;padding:60px 20px}
+  .empty i{font-size:40px;display:block;margin-bottom:12px;color:var(--text3)}
+  /* MODAL */
+  .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;align-items:flex-end;justify-content:center;backdrop-filter:blur(2px)}
+  .modal-bg.open{display:flex}
+  .modal{background:var(--surface);border-radius:20px 20px 0 0;padding:20px 20px calc(20px + env(safe-area-inset-bottom));width:100%;max-width:480px;max-height:88vh;overflow-y:auto}
+  .modal-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 16px}
+  .modal-title{font-size:17px;font-weight:700;margin-bottom:4px;display:flex;justify-content:space-between;align-items:center}
+  .modal-close{background:none;border:none;cursor:pointer;color:var(--text3);font-size:22px;padding:2px}
+  .detail-table{width:100%;font-size:13px;border-collapse:collapse;margin-top:12px}
+  .detail-table tr{border-bottom:0.5px solid var(--border)}
+  .detail-table td{padding:10px 0}
+  .detail-table td:first-child{color:var(--text2);font-weight:500}
+  .detail-table td:last-child{text-align:right;font-weight:600;color:var(--text)}
+  .modal-actions{display:flex;gap:8px;margin-top:16px}
+  .btn-edit{flex:1;padding:12px;background:none;border:0.5px solid var(--border2);border-radius:var(--radius);cursor:pointer;font-size:13px;font-weight:600;color:var(--text);display:flex;align-items:center;justify-content:center;gap:6px}
+  .btn-delete{flex:1;padding:12px;background:none;border:0.5px solid var(--danger-border);border-radius:var(--radius);cursor:pointer;font-size:13px;font-weight:600;color:var(--danger);display:flex;align-items:center;justify-content:center;gap:6px}
+  /* SETTINGS */
+  .pf-item{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border:0.5px solid var(--border);border-radius:var(--radius-sm);margin-bottom:8px;background:var(--surface);box-shadow:var(--shadow)}
+  .pf-name{font-size:14px;font-weight:600;color:var(--text)}
+  .pf-sub{font-size:11px;color:var(--text3);margin-top:2px}
+  .pf-del{background:none;border:none;cursor:pointer;color:var(--text3);padding:6px;font-size:18px}
+  .add-pf-row{display:flex;gap:8px;margin-top:4px}
+  .add-pf-row input{flex:1;padding:10px 12px;font-size:14px;border:0.5px solid var(--border2);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);outline:none}
+  .add-pf-row input:focus{border-color:var(--g)}
+  .add-pf-btn{padding:10px 16px;background:var(--g);color:#fff;border:none;border-radius:var(--radius-sm);cursor:pointer;font-size:14px;font-weight:600;white-space:nowrap;display:flex;align-items:center;gap:4px}
+  .hint{font-size:12px;color:var(--text3);margin-top:8px;line-height:1.5}
+  .divider{border:none;border-top:0.5px solid var(--border);margin:20px 0}
+  .section-label{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px}
+  /* INSTALL GUIDE */
+  .install-card{background:var(--gl);border:0.5px solid var(--g);border-radius:var(--radius);padding:14px;margin-bottom:14px}
+  .install-card .title{font-size:13px;font-weight:700;color:var(--gd);margin-bottom:6px;display:flex;align-items:center;gap:6px}
+  .install-card .body{font-size:12px;color:var(--gd);line-height:1.7}
+  .step{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px}
+  .step-num{width:22px;height:22px;border-radius:50%;background:var(--g);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .step-text{font-size:13px;color:var(--text);line-height:1.5;padding-top:2px}
+  .step-text a{color:var(--g);text-decoration:underline}
+  .step-text code{background:var(--surface2);padding:1px 6px;border-radius:4px;font-size:12px}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="content">
+    <div id="tab-list" class="section active">
+      <div class="page-header">案件一覧</div>
+      <div class="filter-row" id="filter-row"></div>
+      <div id="project-list"></div>
+    </div>
+
+    <div id="tab-summary" class="section">
+      <div class="page-header">集計</div>
+      <div class="section-label">投資額サマリー</div>
+      <div class="metric-grid">
+        <div class="metric"><div class="lbl">総投資額（累計）</div><div class="val" id="s-total">¥0</div><div class="sub">終了分含む</div></div>
+        <div class="metric"><div class="lbl">現在の運用中</div><div class="val green" id="s-active">¥0</div><div class="sub" id="s-active-cnt">0件</div></div>
+      </div>
+      <div class="metric-grid">
+        <div class="metric"><div class="lbl">累計分配金</div><div class="val green" id="s-divid">¥0</div></div>
+        <div class="metric"><div class="lbl">平均利回り</div><div class="val" id="s-yield">0.0%</div><div class="sub">予定ベース</div></div>
+      </div>
+      <div class="metric-grid">
+        <div class="metric"><div class="lbl">終了済み</div><div class="val" id="s-ended">¥0</div><div class="sub" id="s-ended-cnt">0件</div></div>
+        <div class="metric"><div class="lbl">開始前</div><div class="val" id="s-pending">¥0</div><div class="sub" id="s-pending-cnt">0件</div></div>
+      </div>
+      <hr class="divider">
+      <div class="section-label">年別実績</div>
+      <div id="year-summary"></div>
+    </div>
+
+    <div id="tab-add" class="section">
+      <div class="page-header" id="form-title">新規案件登録</div>
+      <div class="form-section-title">基本情報</div>
+      <div class="form-group"><label>プラットフォーム</label><select id="f-platform"></select></div>
+      <div class="form-group"><label>プロジェクト名</label><input type="text" id="f-name" placeholder="例: 渋谷区マンション第3号"></div>
+      <div class="form-row">
+        <div class="form-group"><label>運用資金（円）</label><input type="number" id="f-amount" placeholder="1000000"></div>
+        <div class="form-group"><label>利回り予定（%）</label><input type="number" id="f-yield" step="0.1" placeholder="5.0"></div>
+      </div>
+      <div class="form-section-title">日程</div>
+      <div class="form-row">
+        <div class="form-group"><label>入金日</label><input type="date" id="f-payment"></div>
+        <div class="form-group"><label>運用開始日</label><input type="date" id="f-start"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>運用終了日（予定）</label><input type="date" id="f-end"></div>
+        <div class="form-group"><label>償還日</label><input type="date" id="f-redemption"></div>
+      </div>
+      <div class="form-section-title">配当・実績</div>
+      <div class="form-row">
+        <div class="form-group"><label>配当日</label><input type="date" id="f-divdate"></div>
+        <div class="form-group"><label>分配金（円）</label><input type="number" id="f-divamount" placeholder="0"></div>
+      </div>
+      <div class="form-group"><label>実際の運用期間（月）</label><input type="number" id="f-actual-period" placeholder="未確定なら空欄"></div>
+      <button class="btn-primary" onclick="saveProject()">保存する</button>
+      <button class="btn-sub" onclick="cancelEdit()">キャンセル</button>
+    </div>
+
+    <div id="tab-settings" class="section">
+      <div class="page-header">設定</div>
+      <div class="section-label">プラットフォーム管理</div>
+      <div id="pf-list"></div>
+      <div class="add-pf-row">
+        <input type="text" id="new-pf-name" placeholder="新しい会社名">
+        <button class="add-pf-btn" onclick="addPlatform()"><i class="ti ti-plus"></i> 追加</button>
+      </div>
+      <p class="hint">※ 案件が登録されているプラットフォームは削除できません</p>
+      <hr class="divider">
+      <div class="section-label">iPhoneへのインストール方法</div>
+      <div class="step"><div class="step-num">1</div><div class="step-text">SafariでこのページのURLを開く</div></div>
+      <div class="step"><div class="step-num">2</div><div class="step-text">画面下部の <strong>共有ボタン（□↑）</strong> をタップ</div></div>
+      <div class="step"><div class="step-num">3</div><div class="step-text">「<strong>ホーム画面に追加</strong>」を選択</div></div>
+      <div class="step"><div class="step-num">4</div><div class="step-text">「追加」をタップして完了！</div></div>
+      <hr class="divider">
+      <div class="section-label">Androidへのインストール方法</div>
+      <div class="step"><div class="step-num">1</div><div class="step-text">ChromeでこのページのURLを開く</div></div>
+      <div class="step"><div class="step-num">2</div><div class="step-text">右上の <strong>メニュー（⋮）</strong> をタップ</div></div>
+      <div class="step"><div class="step-num">3</div><div class="step-text">「<strong>ホーム画面に追加</strong>」または「<strong>アプリをインストール</strong>」を選択</div></div>
+      <div class="step"><div class="step-num">4</div><div class="step-text">「追加」をタップして完了！</div></div>
+    </div>
+  </div>
+
+  <nav class="nav">
+    <button class="active" onclick="showTab('list')"><i class="ti ti-list"></i>一覧</button>
+    <button onclick="showTab('summary')"><i class="ti ti-chart-bar"></i>集計</button>
+    <button onclick="showTab('add')"><i class="ti ti-plus"></i>追加</button>
+    <button onclick="showTab('settings')"><i class="ti ti-settings"></i>設定</button>
+  </nav>
+</div>
+
+<div class="modal-bg" id="modal-bg" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title"><span id="modal-title-text"></span><button class="modal-close" onclick="closeModalDirect()"><i class="ti ti-x"></i></button></div>
+    <div id="modal-content"></div>
+  </div>
+</div>
+
+<script>
+const DEFAULT_PLATFORMS=['TORCHES','CAPIMA','COZUCHI','LEVECHY'];
+let projects=JSON.parse(localStorage.getItem('cf_projects')||'[]');
+let platforms=JSON.parse(localStorage.getItem('cf_platforms')||JSON.stringify(DEFAULT_PLATFORMS));
+let editId=null,filterPlatform='all';
+
+function save(){localStorage.setItem('cf_projects',JSON.stringify(projects));localStorage.setItem('cf_platforms',JSON.stringify(platforms))}
+function fmtYen(n){return '¥'+Math.round(n).toLocaleString()}
+function fmtYenM(n){const m=Math.abs(n);if(m>=100000000)return '¥'+(n/100000000).toFixed(1)+'億';if(m>=10000)return '¥'+Math.round(n/10000)+'万';return fmtYen(n)}
+function fmtDate(d){if(!d)return '-';const dt=new Date(d);return `${dt.getFullYear()}/${dt.getMonth()+1}/${dt.getDate()}`}
+
+function getStatus(p){
+  const now=new Date();
+  if(!p.start)return 'pending';
+  const s=new Date(p.start),e=p.end?new Date(p.end):null;
+  if(s>now)return 'pending';
+  if(!e||e>=now)return 'running';
+  return 'ended';
+}
+function statusLabel(s){
+  const map={running:'<span class="status-badge status-running">運用中</span>',pending:'<span class="status-badge status-pending">開始前</span>',ended:'<span class="status-badge status-ended">終了</span>'};
+  return map[s]||'';
+}
+
+function rebuildPlatformSelect(){
+  document.getElementById('f-platform').innerHTML=platforms.map(p=>`<option value="${p}">${p}</option>`).join('');
+}
+
+function showTab(t){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+t).classList.add('active');
+  const idx=['list','summary','add','settings'].indexOf(t);
+  if(idx>=0)document.querySelectorAll('.nav button')[idx].classList.add('active');
+  if(t==='list')renderList();
+  if(t==='summary')renderSummary();
+  if(t==='add'&&editId===null)resetForm();
+  if(t==='settings')renderSettings();
+  document.querySelector('.content').scrollTop=0;
+}
+
+function renderList(){
+  const fr=document.getElementById('filter-row');
+  fr.innerHTML='<span class="ptag'+(filterPlatform==='all'?' sel':'')+'" onclick="setFilter(\'all\')">すべて</span>'+
+    platforms.map(p=>`<span class="ptag${filterPlatform===p?' sel':''}" onclick="setFilter('${p}')">${p}</span>`).join('');
+  const list=document.getElementById('project-list');
+  let ps=filterPlatform==='all'?[...projects]:projects.filter(p=>p.platform===filterPlatform);
+  if(!ps.length){list.innerHTML='<div class="empty"><i class="ti ti-folder"></i>案件がありません<br>「追加」から登録してください</div>';return}
+  const progressHTML=p=>{
+    if(!p.start||!p.end)return '';
+    const now=new Date(),s=new Date(p.start),e=new Date(p.end);
+    const pct=Math.min(100,Math.max(0,Math.round((now-s)/(e-s)*100)));
+    return `<div class="progress-wrap"><div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div><div class="progress-label">${pct}%</div></div>`;
+  };
+  list.innerHTML=ps.map(p=>`
+    <div class="card" onclick="showDetail('${p.id}')">
+      <div class="card-header">
+        <div style="flex:1;min-width:0">
+          <div class="card-title">${p.name||'無題'}</div>
+          <div style="margin-top:4px">${statusLabel(getStatus(p))}</div>
+        </div>
+        <span class="card-platform">${p.platform}</span>
+      </div>
+      <div class="card-grid">
+        <div><div class="field-label">運用資金</div><div class="field-val">${fmtYen(p.amount||0)}</div></div>
+        <div><div class="field-label">利回り予定</div><div class="field-val">${p.yield_pct?p.yield_pct+'%':'-'}</div></div>
+        <div><div class="field-label">運用開始</div><div class="field-val">${fmtDate(p.start)}</div></div>
+        <div><div class="field-label">運用終了</div><div class="field-val">${fmtDate(p.end)}</div></div>
+      </div>
+      ${progressHTML(p)}
+    </div>`).join('');
+}
+
+function setFilter(f){filterPlatform=f;renderList()}
+
+function showDetail(id){
+  const p=projects.find(x=>x.id===id);if(!p)return;
+  const actualMonths=p.actual_period||(p.start&&p.end?Math.round((new Date(p.end)-new Date(p.start))/(1000*60*60*24*30.5)):'');
+  const expectedDiv=p.amount&&p.yield_pct&&actualMonths?Math.round(p.amount*(p.yield_pct/100)*(actualMonths/12)):null;
+  document.getElementById('modal-title-text').textContent=p.name||'案件詳細';
+  const tr=(l,v)=>`<tr><td>${l}</td><td>${v}</td></tr>`;
+  document.getElementById('modal-content').innerHTML=`
+    <div style="display:flex;gap:6px;align-items:center;margin-bottom:4px">
+      <span class="card-platform">${p.platform}</span>${statusLabel(getStatus(p))}
+    </div>
+    <table class="detail-table">
+      ${tr('運用資金',fmtYen(p.amount||0))}
+      ${tr('配当利回り予定',p.yield_pct?p.yield_pct+'%':'-')}
+      ${tr('入金日',fmtDate(p.payment))}
+      ${tr('運用開始',fmtDate(p.start))}
+      ${tr('運用終了（予定）',fmtDate(p.end))}
+      ${tr('実際の運用期間',actualMonths?actualMonths+'ヶ月':'-')}
+      ${tr('償還日',fmtDate(p.redemption))}
+      ${tr('配当日',fmtDate(p.divdate))}
+      ${tr('分配金（実績）',p.divamount?fmtYen(p.divamount):'-')}
+      ${expectedDiv?tr('分配金（予想）',fmtYen(expectedDiv)):''}
+    </table>
+    <div class="modal-actions">
+      <button class="btn-edit" onclick="editProject('${id}')"><i class="ti ti-edit"></i> 編集</button>
+      <button class="btn-delete" onclick="deleteProject('${id}')"><i class="ti ti-trash"></i> 削除</button>
+    </div>`;
+  document.getElementById('modal-bg').classList.add('open');
+}
+
+function closeModal(e){if(e.target===document.getElementById('modal-bg'))closeModalDirect()}
+function closeModalDirect(){document.getElementById('modal-bg').classList.remove('open')}
+
+function renderSummary(){
+  const runningPs=projects.filter(p=>getStatus(p)==='running');
+  const endedPs=projects.filter(p=>getStatus(p)==='ended');
+  const pendingPs=projects.filter(p=>getStatus(p)==='pending');
+  const total=projects.reduce((s,p)=>s+(+p.amount||0),0);
+  const activeAmt=runningPs.reduce((s,p)=>s+(+p.amount||0),0);
+  const endedAmt=endedPs.reduce((s,p)=>s+(+p.amount||0),0);
+  const pendingAmt=pendingPs.reduce((s,p)=>s+(+p.amount||0),0);
+  const divTotal=projects.reduce((s,p)=>s+(+p.divamount||0),0);
+  const withYield=projects.filter(p=>p.yield_pct);
+  const avgYield=withYield.length?withYield.reduce((s,p)=>s+(+p.yield_pct),0)/withYield.length:0;
+  document.getElementById('s-total').textContent=fmtYenM(total);
+  document.getElementById('s-active').textContent=fmtYenM(activeAmt);
+  document.getElementById('s-active-cnt').textContent=runningPs.length+'件 運用中';
+  document.getElementById('s-divid').textContent=fmtYenM(divTotal);
+  document.getElementById('s-yield').textContent=avgYield.toFixed(1)+'%';
+  document.getElementById('s-ended').textContent=fmtYenM(endedAmt);
+  document.getElementById('s-ended-cnt').textContent=endedPs.length+'件';
+  document.getElementById('s-pending').textContent=fmtYenM(pendingAmt);
+  document.getElementById('s-pending-cnt').textContent=pendingPs.length+'件';
+
+  const byYear={};
+  projects.forEach(p=>{
+    const yr=p.start?new Date(p.start).getFullYear():p.payment?new Date(p.payment).getFullYear():null;
+    if(!yr)return;
+    if(!byYear[yr])byYear[yr]={inv:0,div:0,cnt:0};
+    byYear[yr].inv+=(+p.amount||0);byYear[yr].div+=(+p.divamount||0);byYear[yr].cnt++;
+  });
+  const yrs=Object.keys(byYear).sort((a,b)=>b-a);
+  const ys=document.getElementById('year-summary');
+  if(!yrs.length){ys.innerHTML='<div class="empty" style="padding:20px">データがありません</div>';return}
+  ys.innerHTML=yrs.map(yr=>`
+    <div class="year-section">
+      <div class="year-title">${yr}年（${byYear[yr].cnt}件）</div>
+      <div class="year-metrics">
+        <div class="year-metric"><div class="lbl">投資額</div><div class="val">${fmtYenM(byYear[yr].inv)}</div></div>
+        <div class="year-metric"><div class="lbl">分配金</div><div class="val" style="color:var(--g)">${fmtYenM(byYear[yr].div)}</div></div>
+        <div class="year-metric"><div class="lbl">実績率</div><div class="val">${byYear[yr].inv?((byYear[yr].div/byYear[yr].inv)*100).toFixed(1):0}%</div></div>
+      </div>
+    </div>`).join('');
+}
+
+function renderSettings(){
+  const usedPlatforms=new Set(projects.map(p=>p.platform));
+  document.getElementById('pf-list').innerHTML=platforms.map(pf=>`
+    <div class="pf-item">
+      <div>
+        <div class="pf-name">${pf}</div>
+        <div class="pf-sub">${DEFAULT_PLATFORMS.includes(pf)?'デフォルト':''}</div>
+      </div>
+      ${usedPlatforms.has(pf)
+        ?'<span style="font-size:11px;color:var(--text3)">使用中</span>'
+        :`<button class="pf-del" onclick="deletePlatform('${pf}')"><i class="ti ti-trash"></i></button>`}
+    </div>`).join('');
+}
+
+function addPlatform(){
+  const inp=document.getElementById('new-pf-name');
+  const name=inp.value.trim();
+  if(!name){alert('会社名を入力してください');return}
+  if(platforms.includes(name)){alert('すでに登録されています');return}
+  platforms.push(name);save();inp.value='';
+  rebuildPlatformSelect();renderSettings();
+}
+
+function deletePlatform(pf){
+  if(projects.some(p=>p.platform===pf)){alert('この会社の案件が登録されているため削除できません');return}
+  if(!confirm(`「${pf}」を削除しますか？`))return;
+  platforms=platforms.filter(p=>p!==pf);save();
+  rebuildPlatformSelect();renderSettings();
+}
+
+function resetForm(){
+  editId=null;
+  document.getElementById('form-title').textContent='新規案件登録';
+  ['f-name','f-amount','f-yield','f-payment','f-start','f-end','f-redemption','f-divdate','f-divamount','f-actual-period'].forEach(id=>document.getElementById(id).value='');
+  rebuildPlatformSelect();
+}
+
+function saveProject(){
+  const name=document.getElementById('f-name').value.trim();
+  if(!name){alert('プロジェクト名を入力してください');return}
+  const data={
+    id:editId||Date.now().toString(),
+    platform:document.getElementById('f-platform').value,
+    name,amount:document.getElementById('f-amount').value,
+    yield_pct:document.getElementById('f-yield').value,
+    payment:document.getElementById('f-payment').value,
+    start:document.getElementById('f-start').value,
+    end:document.getElementById('f-end').value,
+    redemption:document.getElementById('f-redemption').value,
+    divdate:document.getElementById('f-divdate').value,
+    divamount:document.getElementById('f-divamount').value,
+    actual_period:document.getElementById('f-actual-period').value
+  };
+  if(editId)projects=projects.map(p=>p.id===editId?data:p);
+  else projects.push(data);
+  save();editId=null;showTab('list');
+}
+
+function editProject(id){
+  closeModalDirect();
+  const p=projects.find(x=>x.id===id);if(!p)return;
+  editId=id;rebuildPlatformSelect();
+  document.getElementById('form-title').textContent='案件を編集';
+  document.getElementById('f-platform').value=p.platform;
+  document.getElementById('f-name').value=p.name||'';
+  document.getElementById('f-amount').value=p.amount||'';
+  document.getElementById('f-yield').value=p.yield_pct||'';
+  document.getElementById('f-payment').value=p.payment||'';
+  document.getElementById('f-start').value=p.start||'';
+  document.getElementById('f-end').value=p.end||'';
+  document.getElementById('f-redemption').value=p.redemption||'';
+  document.getElementById('f-divdate').value=p.divdate||'';
+  document.getElementById('f-divamount').value=p.divamount||'';
+  document.getElementById('f-actual-period').value=p.actual_period||'';
+  showTab('add');
+}
+
+function deleteProject(id){
+  if(!confirm('この案件を削除しますか？'))return;
+  projects=projects.filter(p=>p.id!==id);
+  save();closeModalDirect();renderList();
+}
+
+function cancelEdit(){editId=null;showTab('list')}
+
+rebuildPlatformSelect();
+renderList();
+</script>
+</body>
+</html>
