@@ -187,8 +187,13 @@
       <div class="form-section-title">配当・実績</div>
       <div class="form-row">
         <div class="form-group"><label>配当日</label><input type="date" id="f-divdate"></div>
-        <div class="form-group"><label>分配金（円）</label><input type="number" id="f-divamount" placeholder="0"></div>
+        <div class="form-group"><label>利益分配率（%）</label><input type="number" id="f-div-rate" step="0.01" placeholder="0.00"></div>
       </div>
+      <div class="form-row">
+        <div class="form-group"><label>受取金額（税引前）</label><input type="number" id="f-div-before-tax" placeholder="0"></div>
+        <div class="form-group"><label>源泉徴収税額</label><input type="number" id="f-div-tax" placeholder="0"></div>
+      </div>
+      <div class="form-group"><label>受取金額（税引後）</label><input type="number" id="f-divamount" placeholder="0"></div>
       <div class="form-group"><label>実際の運用期間（月）</label><input type="number" id="f-actual-period" placeholder="未確定なら空欄"></div>
       <button class="btn-primary" onclick="saveProject()">保存する</button>
       <button class="btn-sub" onclick="cancelEdit()">キャンセル</button>
@@ -282,6 +287,20 @@ function renderList(){
   const list=document.getElementById('project-list');
   let ps=filterPlatform==='all'?[...projects]:projects.filter(p=>p.platform===filterPlatform);
   if(!ps.length){list.innerHTML='<div class="empty"><i class="ti ti-folder"></i>案件がありません<br>「追加」から登録してください</div>';return}
+  // ソート: 開始前→運用中（開始日古い順）→終了済み（終了日古い順）
+  const statusOrder={pending:0,running:1,ended:2};
+  ps.sort((a,b)=>{
+    const sa=getStatus(a),sb=getStatus(b);
+    if(statusOrder[sa]!==statusOrder[sb]) return statusOrder[sa]-statusOrder[sb];
+    if(sa==='ended'){
+      const ea=a.end?new Date(a.end):new Date(0);
+      const eb=b.end?new Date(b.end):new Date(0);
+      return ea-eb;
+    }
+    const da=a.start?new Date(a.start):new Date(0);
+    const db=b.start?new Date(b.start):new Date(0);
+    return da-db;
+  });
   const progressHTML=p=>{
     if(!p.start||!p.end)return '';
     const now=new Date(),s=new Date(p.start),e=new Date(p.end);
@@ -328,8 +347,11 @@ function showDetail(id){
       ${tr('実際の運用期間',actualMonths?actualMonths+'ヶ月':'-')}
       ${tr('償還日',fmtDate(p.redemption))}
       ${tr('配当日',fmtDate(p.divdate))}
-      ${tr('分配金（実績）',p.divamount?fmtYen(p.divamount):'-')}
-      ${expectedDiv?tr('分配金（予想）',fmtYen(expectedDiv)):''}
+      ${tr('利益分配率',p.div_rate?p.div_rate+'%':'-')}
+      ${tr('受取金額（税引前）',p.div_before_tax?fmtYen(p.div_before_tax):'-')}
+      ${tr('源泉徴収税額',p.div_tax?fmtYen(p.div_tax):'-')}
+      ${tr('受取金額（税引後）',p.divamount?fmtYen(p.divamount):'-')}
+      ${expectedDiv?tr('分配金（予想・税引前）',fmtYen(expectedDiv)):''}
     </table>
     <div class="modal-actions">
       <button class="btn-edit" onclick="editProject('${id}')"><i class="ti ti-edit"></i> 編集</button>
@@ -416,7 +438,7 @@ function deletePlatform(pf){
 function resetForm(){
   editId=null;
   document.getElementById('form-title').textContent='新規案件登録';
-  ['f-name','f-amount','f-yield','f-payment','f-start','f-end','f-redemption','f-divdate','f-divamount','f-actual-period'].forEach(id=>document.getElementById(id).value='');
+  ['f-name','f-amount','f-yield','f-payment','f-start','f-end','f-redemption','f-divdate','f-div-rate','f-div-before-tax','f-div-tax','f-divamount','f-actual-period'].forEach(id=>document.getElementById(id).value='');
   rebuildPlatformSelect();
 }
 
@@ -424,7 +446,7 @@ function saveProject(){
   const name=document.getElementById('f-name').value.trim();
   if(!name){alert('プロジェクト名を入力してください');return}
   const data={
-    id:editId||Date.now().toString(),
+    id:editId||(Date.now().toString(36)+Math.random().toString(36).slice(2)),
     platform:document.getElementById('f-platform').value,
     name,amount:document.getElementById('f-amount').value,
     yield_pct:document.getElementById('f-yield').value,
@@ -433,6 +455,9 @@ function saveProject(){
     end:document.getElementById('f-end').value,
     redemption:document.getElementById('f-redemption').value,
     divdate:document.getElementById('f-divdate').value,
+    div_rate:document.getElementById('f-div-rate').value,
+    div_before_tax:document.getElementById('f-div-before-tax').value,
+    div_tax:document.getElementById('f-div-tax').value,
     divamount:document.getElementById('f-divamount').value,
     actual_period:document.getElementById('f-actual-period').value
   };
@@ -455,6 +480,9 @@ function editProject(id){
   document.getElementById('f-end').value=p.end||'';
   document.getElementById('f-redemption').value=p.redemption||'';
   document.getElementById('f-divdate').value=p.divdate||'';
+  document.getElementById('f-div-rate').value=p.div_rate||'';
+  document.getElementById('f-div-before-tax').value=p.div_before_tax||'';
+  document.getElementById('f-div-tax').value=p.div_tax||'';
   document.getElementById('f-divamount').value=p.divamount||'';
   document.getElementById('f-actual-period').value=p.actual_period||'';
   showTab('add');
